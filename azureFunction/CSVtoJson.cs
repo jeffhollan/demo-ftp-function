@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using Microsoft.Azure.WebJobs.Host;
 using System.Linq;
+using System.Text;
 
 namespace AzureFunction { 
     public class CSVtoJson {
@@ -32,7 +33,9 @@ namespace AzureFunction {
                 ((JArray)resultSet["rows"]).Add(lineObject);
             }
             log.Info(resultSet.ToString(Formatting.Indented));
-            return req.CreateResponse(HttpStatusCode.OK, resultSet, "application/json");
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            response.Content = new StringContent(resultSet.ToString(), Encoding.UTF8, "application/json");
+            return response;
         }
     }
 }
