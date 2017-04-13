@@ -1,0 +1,257 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "office365_1_Connection_Name": {
+      "type": "string",
+      "defaultValue": "office365"
+    },
+    "office365_1_Connection_DisplayName": {
+      "type": "string",
+      "defaultValue": "jehollan@microsoft.com"
+    },
+    "ftp_1_Connection_Name": {
+      "type": "string",
+      "defaultValue": "ftp"
+    },
+    "ftp_1_Connection_DisplayName": {
+      "type": "string",
+      "defaultValue": "My FTP Server"
+    },
+    "ftp_1_serverAddress": {
+      "type": "string",
+      "metadata": {
+        "description": "Server Address"
+      },
+      "defaultValue": "ftp://waws-prod-sn1-097.ftp.azurewebsites.windows.net"
+    },
+    "ftp_1_userName": {
+      "type": "string",
+      "metadata": {
+        "description": "User Name"
+      },
+      "defaultValue": "serverless-day-ftp\\hollan"
+    },
+    "ftp_1_password": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Password"
+      }
+    },
+    "ftp_1_serverPort": {
+      "type": "int",
+      "metadata": {
+        "description": "FTP Port Number (example: 21)"
+      }
+    },
+    "ftp_1_isssl": {
+      "type": "bool",
+      "metadata": {
+        "description": "Enable SSL? (True/False)"
+      },
+      "defaultValue": true
+    },
+    "ftp_1_isBinaryTransport": {
+      "type": "bool",
+      "metadata": {
+        "description": "Enable Binary Transport? (True/False)"
+      },
+      "defaultValue": true
+    },
+    "ftp_1_disableCertificateValidation": {
+      "type": "bool",
+      "metadata": {
+        "description": "Disable Certificate Validation? (True/False)"
+      },
+      "defaultValue": false
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "properties": {
+        "state": "Enabled",
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "$connections": {
+              "defaultValue": {},
+              "type": "Object"
+            }
+          },
+          "triggers": {
+            "When_a_file_is_added_or_modified": {
+              "recurrence": {
+                "frequency": "Minute",
+                "interval": 3
+              },
+              "metadata": {
+                "L3VwbG9hZA==": "/upload"
+              },
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "api": {
+                    "runtimeUrl": "https://logic-apis-westus2.azure-apim.net/apim/ftp"
+                  },
+                  "connection": {
+                    "name": "@parameters('$connections')['ftp']['connectionId']"
+                  }
+                },
+                "method": "get",
+                "path": "/datasets/default/triggers/onupdatedfile",
+                "queries": {
+                  "folderId": "L3VwbG9hZA==",
+                  "includeFileContent": true,
+                  "inferContentType": true
+                }
+              }
+            }
+          },
+          "actions": {
+            "CSV_to_JSON": {
+              "runAfter": {},
+              "type": "Function",
+              "inputs": {
+                "body": "@triggerBody()",
+                "function": {
+                  "id": "/subscriptions/80d4fe69-c95b-4dd2-a938-9250f1c8ab03/resourceGroups/functions-brownbag/providers/Microsoft.Web/sites/functions-brownbag/functions/CSV_to_JSON"
+                }
+              }
+            },
+            "For_each": {
+              "foreach": "@body('Parse_JSON')?['rows']",
+              "actions": {
+                "Send_an_email": {
+                  "runAfter": {},
+                  "type": "ApiConnection",
+                  "inputs": {
+                    "body": {
+                      "Body": "Thanks for signing up @{item()?['Name']}",
+                      "Subject": "Thank you for signing up",
+                      "To": "@{item()?['Email']}"
+                    },
+                    "host": {
+                      "api": {
+                        "runtimeUrl": "https://logic-apis-westus2.azure-apim.net/apim/office365"
+                      },
+                      "connection": {
+                        "name": "@parameters('$connections')['office365']['connectionId']"
+                      }
+                    },
+                    "method": "post",
+                    "path": "/Mail"
+                  }
+                }
+              },
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Foreach"
+            },
+            "Parse_JSON": {
+              "runAfter": {
+                "CSV_to_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('CSV_to_JSON')",
+                "schema": {
+                  "properties": {
+                    "rows": {
+                      "items": {
+                        "properties": {
+                          "AssignedContact": {
+                            "type": "string"
+                          },
+                          "Email": {
+                            "type": "string"
+                          },
+                          "Name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "Name",
+                          "Email",
+                          "AssignedContact"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {
+          "$connections": {
+            "value": {
+              "ftp": {
+                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', 'westus2', '/managedApis/', 'ftp')]",
+                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('ftp_1_Connection_Name'))]",
+                "connectionName": "[parameters('ftp_1_Connection_Name')]"
+              },
+              "office365": {
+                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', 'westus2', '/managedApis/', 'office365')]",
+                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('office365_1_Connection_Name'))]",
+                "connectionName": "[parameters('office365_1_Connection_Name')]"
+              }
+            }
+          }
+        }
+      },
+      "name": "logic-app-101",
+      "type": "Microsoft.Logic/workflows",
+      "location": "westus2",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/connections', parameters('ftp_1_Connection_Name'))]",
+        "[resourceId('Microsoft.Web/connections', parameters('office365_1_Connection_Name'))]"
+      ]
+    },
+    {
+      "type": "MICROSOFT.WEB/CONNECTIONS",
+      "apiVersion": "2016-06-01",
+      "name": "[parameters('office365_1_Connection_Name')]",
+      "location": "westus2",
+      "properties": {
+        "api": {
+          "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', 'westus2', '/managedApis/', 'office365')]"
+        },
+        "displayName": "[parameters('office365_1_Connection_DisplayName')]"
+      }
+    },
+    {
+      "type": "MICROSOFT.WEB/CONNECTIONS",
+      "apiVersion": "2016-06-01",
+      "name": "[parameters('ftp_1_Connection_Name')]",
+      "location": "westus2",
+      "properties": {
+        "api": {
+          "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', 'westus2', '/managedApis/', 'ftp')]"
+        },
+        "displayName": "[parameters('ftp_1_Connection_DisplayName')]",
+        "parameterValues": {
+          "serverAddress": "[parameters('ftp_1_serverAddress')]",
+          "userName": "[parameters('ftp_1_userName')]",
+          "password": "[parameters('ftp_1_password')]",
+          "serverPort": "[parameters('ftp_1_serverPort')]",
+          "isssl": "[parameters('ftp_1_isssl')]",
+          "isBinaryTransport": "[parameters('ftp_1_isBinaryTransport')]",
+          "disableCertificateValidation": "[parameters('ftp_1_disableCertificateValidation')]"
+        }
+      }
+    }
+  ],
+  "outputs": {}
+}

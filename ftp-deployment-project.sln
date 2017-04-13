@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26403.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{151D2E53-A2C4-4D7D-83FE-D05416EBD58E}") = "ftp-deployment-project", "ftp-deployment-project\ftp-deployment-project.deployproj", "{E8D16704-E5B2-4289-95DA-63845C391B82}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "azureFunction", "azureFunction\azureFunction.csproj", "{3D289A6F-48FA-4047-9340-D36088CDB14A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E8D16704-E5B2-4289-95DA-63845C391B82}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8D16704-E5B2-4289-95DA-63845C391B82}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8D16704-E5B2-4289-95DA-63845C391B82}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8D16704-E5B2-4289-95DA-63845C391B82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D289A6F-48FA-4047-9340-D36088CDB14A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D289A6F-48FA-4047-9340-D36088CDB14A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D289A6F-48FA-4047-9340-D36088CDB14A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D289A6F-48FA-4047-9340-D36088CDB14A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
